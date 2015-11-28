@@ -1,0 +1,15 @@
+{
+    "FromEmail": "me@example.com",
+    "ToEmails": ["you@example.com"],
+    "Subject":  "hola from simple-mail-send-go", 
+    "Credentials": {
+	"mandrill": {"apikey":"<key>"},
+	"mailgun": {"apikey":"<key>",
+		    "domain":"<domain>"},
+	"sendgrid": {
+	    "user": "<user>", 
+	    "passwd":  "<pass>"
+	},
+	"amazon": {"access-key-id":"<key>", "secret-access-key":"<key>"}
+    }
+}
