@@ -1,7 +1,8 @@
 {
     "FromEmail": "me@example.com",
     "ToEmails": ["you@example.com"],
-    "Subject":  "hola from simple-mail-send-go", 
+    "Subject":  "hola from simple-mail-send-go",
+    "MessageText": "message text",
     "Credentials": {
 	"mandrill": {"apikey":"<key>"},
 	"mailgun": {"apikey":"<key>",

@@ -9,12 +9,18 @@ func ServeTLS(address string, certPem string, keyPem string) error {
 	http.HandleFunc("/ok", okHandler)
 	http.HandleFunc("/send", mailRequestHandler)
 	http.HandleFunc("/credentials", credentialListerHandler)
+	http.HandleFunc("/sampleRequest", credentialListerHandler)
 	return http.ListenAndServeTLS(address, certPem, keyPem, nil)
 }
 
 func okHandler(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "OK")
+}
+
+func exampleRequestHandler(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(200)
+	fmt.Fprintf(w, sampleRequest)
 }
 
 func credentialListerHandler(w http.ResponseWriter, req *http.Request) {
@@ -44,3 +50,20 @@ func mailRequestHandler(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "success: %v", resp)
 	}
 }
+
+const sampleRequest = `{
+    "FromEmail": "me@example.com",
+    "ToEmails": ["you@example.com"],
+    "Subject":  "hola from simple-mail-send-go",
+    "MessageText": "message text",
+    "Credentials": {
+	"mandrill": {"apikey":"<key>"},
+	"mailgun": {"apikey":"<key>",
+		    "domain":"<domain>"},
+	"sendgrid": {
+	    "user": "<user>", 
+	    "passwd":  "<pass>"
+	},
+	"amazon": {"access-key-id":"<key>", "secret-access-key":"<key>"}
+    }
+}`
