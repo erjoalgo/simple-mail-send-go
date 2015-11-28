@@ -1,6 +1,6 @@
 This simple email-sending service provides a wrapper/abstraction over other mail-sending services. Currently supported are SendGrid, MailGun, Mandrill, Amazon SES.
 
-- go get https://github.com/erjoalgo/simple-mail-send-go.git
+- go get github.com/erjoalgo/simple-mail-send-go.git
 - Generate required cert.pem, key.pem files.
 
   - go run ${GOROOT}/src/crypto/tls/generate_cert.go --host localhost
