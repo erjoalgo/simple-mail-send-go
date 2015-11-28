@@ -1,8 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"net/url"
+	"io"
 	"strings"
 )
 
@@ -12,27 +13,52 @@ type SendMailRequest struct {
 	Subject     string
 	MessageText string
 	// some services require several credentials
-	ApiKeys map[string]ApiKey
+	Credentials    map[string]Credentials `json:"-"`
+	RawCredentials map[string]interface{} `json:"Credentials"`
 }
 
-func (mr SendMailRequest) ApiKeyFor(s MailService) ApiKey {
-	return mr.ApiKeys[strings.ToLower(s.ServiceName)]
+func (mr SendMailRequest) CredentialsFor(s MailService) Credentials {
+	return mr.Credentials[strings.ToLower(s.ServiceName)]
 }
 
-var REQUIRED_FIELDS = []string{"FromEmail", "ToEmails", "ApiKeys"}
+// Any type of credential-related information needed by a service
+type Credentials map[string]interface{}
 
-func ParseMailRequest(values url.Values) (SendMailRequest, error) {
-	for _, field := range REQUIRED_FIELDS {
-		if list, contains := values[field]; !contains && len(list) == 0 {
-			return SendMailRequest{}, fmt.Errorf("required field %s missing or empty in request", field)
+func (c Credentials) Get(key string) (string, bool) {
+	if val, contains := c[key]; !contains {
+		return "", false
+	} else if valString, ok := val.(string); !ok {
+		return "", false
+	} else {
+		return valString, true
+	}
+}
+
+func (mr SendMailRequest) Validate() error {
+	if mr.FromEmail == "" {
+		return fmt.Errorf("FromEmail is required")
+	} else if len(mr.ToEmails) == 0 {
+		return fmt.Errorf("ToEmails is required")
+	} else if len(mr.Credentials) == 0 {
+		return fmt.Errorf("Credentials required")
+	} else {
+		return nil
+	}
+}
+func NewMailRequestJson(jsonRequest io.Reader) (mr SendMailRequest, err error) {
+	if err = json.NewDecoder(jsonRequest).Decode(&mr); err != nil {
+		return
+	} else {
+		mr.Credentials = make(map[string]Credentials)
+		for key, value := range mr.RawCredentials {
+			if valueMap, ok := value.(map[string]interface{}); !ok {
+				return mr, fmt.Errorf(
+					"all credentials must be key-value pairs: %v",
+					value)
+			} else {
+				mr.Credentials[key] = Credentials(valueMap)
+			}
 		}
 	}
-	return SendMailRequest{
-		FromEmail:   values["FromEmail"][0],
-		ToEmails:    values["ToEmails"],
-		Subject:     values["Subject"][0],
-		MessageText: values["MessageText"][0],
-		// TODO JSON
-		// ApiKeys:     values["ApiKeys"],
-	}, nil
+	return
 }
