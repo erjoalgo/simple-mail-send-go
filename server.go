@@ -9,7 +9,7 @@ func ServeTLS(address string, certPem string, keyPem string) error {
 	http.HandleFunc("/ok", okHandler)
 	http.HandleFunc("/send", mailRequestHandler)
 	http.HandleFunc("/credentials", credentialListerHandler)
-	http.HandleFunc("/sampleRequest", credentialListerHandler)
+	http.HandleFunc("/sampleRequest", exampleRequestHandler)
 	return http.ListenAndServeTLS(address, certPem, keyPem, nil)
 }
 
