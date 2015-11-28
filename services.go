@@ -17,33 +17,35 @@ const CONTENT_TYPE_URLENCODED = "application/x-www-form-urlencoded"
 
 var SendGrid = MailService{
 	ServiceName: "SendGrid",
-	EndpointUrl: "https://api.sendgrid.com/api/mail.send.json?",
-	TranslateMailRequest: func(mr SendMailRequest, apiKey ApiKey) (io.Reader, string, error) {
-		if key, ok := apiKey.(map[string]string); !ok {
-			return nil, "", fmt.Errorf("sendgrid key must be a map, not %v", key)
-		} else if key["key"] == "" || key["user"] == "" {
-			return nil, "", fmt.Errorf("sendgrid key must contain user, key %v", key)
+	EndpointUrl: func(mr SendMailRequest, credentials Credentials) (string, error) {
+		return "https://api.sendgrid.com/api/mail.send.json?", nil
+	},
+	TranslateMailRequest: func(mr SendMailRequest, credentials Credentials) (io.Reader, string, error) {
+		key, okKey := credentials.Get("passwd")
+		user, okUser := credentials.Get("user")
+		if !okUser || !okKey {
+			return nil, "", fmt.Errorf("sendgrid credentials must contain 'user', 'passwd' %v", credentials)
 		} else {
 			data := url.Values{
-				"api_key":  {key["key"]},
-				"api_user": {key["user"]},
+				"api_key":  {key},
+				"api_user": {user},
 				"from":     {mr.FromEmail},
 				"to":       {mr.ToEmails[0]}, //TODO
 				"subject":  {mr.Subject},
 				"text":     {mr.MessageText},
 				"headers":  {"null"},
-				"html":     {""},
+				"html":     {"null"}, //unfortunately required
 			}
-			fmt.Printf("%s\n", data.Encode())
 			return strings.NewReader(data.Encode()), CONTENT_TYPE_URLENCODED, nil
 		}
 	},
+	RequiredCredentials: []string{"passwd", "user"},
+	DocUrl:              "https://sendgrid.com/docs/API_Reference/Web_API/mail.html",
 }
 
 var MailGun = MailService{
 	ServiceName: "MailGun",
-	EndpointUrl: "https://api.mailgun.net/v3/sandbox4a89fc7b8f8f4a80a22bf7835a3ff6cb.mailgun.org/messages?",
-	TranslateMailRequest: func(mr SendMailRequest, apiKey ApiKey) (io.Reader, string, error) {
+	TranslateMailRequest: func(mr SendMailRequest, credentials Credentials) (io.Reader, string, error) {
 		data := url.Values{
 			// "from":    {"Excited User <mailgun@sandbox4a89fc7b8f8f4a80a22bf7835a3ff6cb.mailgun.org>"},
 			"from": {fmt.Sprintf("<%s>", mr.FromEmail)},
@@ -58,25 +60,36 @@ var MailGun = MailService{
 
 		return strings.NewReader(data.Encode()), CONTENT_TYPE_URLENCODED, nil
 	},
-	PostRequestHook: func(req *http.Request, mr SendMailRequest, key ApiKey) error {
-		if key, ok := key.(string); !ok {
+	PostRequestHook: func(req *http.Request, mr SendMailRequest, key Credentials) error {
+		if key, ok := key.Get("apikey"); !ok {
 			return fmt.Errorf("mailgun requires an api key", key)
 		} else {
 			req.SetBasicAuth("api", key)
 			return nil
 		}
 	},
+	EndpointUrl: func(mr SendMailRequest, credentials Credentials) (string, error) {
+		if domain, ok := credentials.Get("domain"); !ok {
+			return "", fmt.Errorf("mailgun requires domain in api key: %v", credentials)
+		} else {
+			return "https://api.mailgun.net/v3/" + domain + "/messages?", nil
+		}
+	},
+	RequiredCredentials: []string{"domain", "apikey"},
+	DocUrl:              "https://documentation.mailgun.com/quickstart.html#sending-messages",
 }
 
 var Mandrill = MailService{
 	ServiceName: "Mandrill",
-	EndpointUrl: "https://mandrillapp.com/api/1.0/messages/send.json",
-	TranslateMailRequest: func(mr SendMailRequest, apiKey ApiKey) (io.Reader, string, error) {
-		if key, ok := apiKey.(string); !ok {
-			return nil, "", fmt.Errorf("mandrill requires a key")
+	EndpointUrl: func(mr SendMailRequest, credentials Credentials) (string, error) {
+		return "https://mandrillapp.com/api/1.0/messages/send.json", nil
+	},
+	TranslateMailRequest: func(mr SendMailRequest, credentials Credentials) (io.Reader, string, error) {
+		if apikey, ok := credentials.Get("apikey"); !ok {
+			return nil, "", fmt.Errorf("mandrill requires an apikey")
 		} else {
 			data := map[string]interface{}{
-				"key": key,
+				"key": apikey,
 				"message": map[string]interface{}{
 					"from_email": mr.FromEmail,
 					"text":       mr.MessageText,
@@ -97,13 +110,17 @@ var Mandrill = MailService{
 			}
 		}
 	},
+	RequiredCredentials: []string{"apikey"},
+	DocUrl:              "https://mandrillapp.com/api/docs/messages.JSON.html#method-send",
 }
 
 var Amazon = MailService{
 	ServiceName: "Amazon",
-	EndpointUrl: "https://email.us-east-1.amazonaws.com",
-	TranslateMailRequest: func(mr SendMailRequest, apiKey ApiKey) (io.Reader, string, error) {
-		if key, ok := apiKey.(string); !ok {
+	EndpointUrl: func(mr SendMailRequest, credentials Credentials) (string, error) {
+		return "https://email.us-east-1.amazonaws.com", nil
+	},
+	TranslateMailRequest: func(mr SendMailRequest, credentials Credentials) (io.Reader, string, error) {
+		if key, ok := credentials.Get("access-key-id"); !ok {
 			return nil, "", fmt.Errorf("amazon requires a key")
 		} else {
 			data := url.Values{
@@ -118,10 +135,12 @@ var Amazon = MailService{
 			return strings.NewReader(data.Encode()), CONTENT_TYPE_URLENCODED, nil
 		}
 	},
-	PostRequestHook: func(req *http.Request, mr SendMailRequest, key ApiKey) error {
+	PostRequestHook: func(req *http.Request, mr SendMailRequest, key Credentials) error {
 		req.Header.Set("X-Amzn-Authorization", "AWS3-HTTPS")
 		return nil
 	},
+	RequiredCredentials: []string{"access-key-id", "secret-access-key"},
+	DocUrl:              "http://docs.aws.amazon.com/ses/latest/APIReference/API_SendEmail.html",
 }
 
 var MailServices = []MailService{SendGrid, MailGun, Mandrill, Amazon}
