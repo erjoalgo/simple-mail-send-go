@@ -15,7 +15,7 @@ This simple email-sending service provides a wrapper/abstraction over other mail
 
 - Send an example mail-send request:
 
-.. code:: python
+::
 	  curl -d @- -k https://localhost:6700/send <<END
 	  {
 		    "FromEmail": "me@example.com",
@@ -32,4 +32,4 @@ This simple email-sending service provides a wrapper/abstraction over other mail
 			"amazon": {"access-key-id":"<key>", "secret-access-key":"<key>"}
 		    }
 	}
-END
+	END
