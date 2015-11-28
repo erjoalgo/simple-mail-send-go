@@ -16,6 +16,7 @@ This simple email-sending service provides a wrapper/abstraction over other mail
 - Send an example mail-send request:
 
 ::
+
 	  curl -d @- -k https://localhost:6700/send <<END
 	  {
 		    "FromEmail": "me@example.com",
