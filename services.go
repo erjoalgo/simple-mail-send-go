@@ -96,7 +96,6 @@ var Mandrill = MailService{
 					"subject":    mr.Subject,
 					// "from_name":  Example Name",
 					"to": []interface{}{map[string]interface{}{
-						// "email": "erjoalgo@gmail.com",
 						"email": mr.ToEmails[0],
 						// "name":  "Recipient Name",
 						"type": "to",
@@ -115,7 +114,8 @@ var Mandrill = MailService{
 }
 
 var Amazon = MailService{
-	ServiceName: "Amazon",
+	// TODO amazon requires signature on each message
+	ServiceName: "AmazonSES",
 	EndpointUrl: func(mr SendMailRequest, credentials Credentials) (string, error) {
 		return "https://email.us-east-1.amazonaws.com", nil
 	},
@@ -126,8 +126,8 @@ var Amazon = MailService{
 			data := url.Values{
 				"AWSAccessKeyId": {key},
 				"Action":         {"SendEmail"},
-				"Destination.ToAddress.member.1": {"erjoalgo@gmail.com"},
-				"Source":                 {"erjoalgo@gmail.com"},
+				"Destination.ToAddress.member.1": {mr.ToEmails[0]},
+				"Source":                 {mr.FromEmail},
 				"Message.Subject.Data":   {mr.Subject},
 				"Message.Body.Text.Data": {mr.MessageText},
 				"Version":                {"2010-12-01"},
