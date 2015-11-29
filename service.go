@@ -66,13 +66,13 @@ func (s MailService) WasSuccess(r *http.Response) error {
 const MAX_RETRY = 3
 
 // Try sending using several services, several times
-func SendRetry(mr SendMailRequest, maxRetry int) (resp *http.Response, errors []error, success bool) {
+func SendRetry(mr SendMailRequest, maxRetry int) (resp *http.Response, errors []error, success bool, service MailService) {
 	for retriesLeft := maxRetry; retriesLeft > 0; retriesLeft-- {
 		for _, service := range MailServices {
 			if resp, err := service.Send(mr); err != nil {
 				errors = append(errors, err)
 			} else {
-				return resp, errors, true
+				return resp, errors, true, service
 			}
 		}
 	}
