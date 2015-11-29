@@ -13,7 +13,7 @@ This simple email-sending service provides a wrapper/abstraction over other mail
   - curl https://localhost:6700/credentials -k 
   - curl https://localhost:6700/sampleRequest -k 
 
-- Send an example mail-send request:
+- Obtain credentials for at least one supported service. Send an example mail-send request:
 
 ::
 
@@ -24,13 +24,17 @@ This simple email-sending service provides a wrapper/abstraction over other mail
 		    "Subject":  "hola from simple-mail-send-go", 
 		    "Credentials": {
 			"mandrill": {"apikey":"<key>"},
-			"mailgun": {"apikey":"<key>",
-				    "domain":"<domain>"},
-			"sendgrid": {
-			    "user": "<user>", 
-			    "passwd":  "<pass>"
-			},
+			"mailgun": {"apikey":"<key>", "domain":"<domain>"},
+			"sendgrid": {"user": "<user>", "passwd":  "<pass>"},
 			"amazon": {"access-key-id":"<key>", "secret-access-key":"<key>"}
 		    }
 	}
 	END
+
+
+
+- The following fields are always required:
+
+  - "FromEmail", a string
+  - "ToEmails", a list of strings
+  - "Credentials" a JSON map of service names to the map of required key-value pairs for each service. (See the "credential" endpoint for service-specific info)
