@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"log"
 	"net/http"
+	"strings"
 )
 
 func ServeTLS(address string, certPem string, keyPem string) error {
@@ -14,6 +17,7 @@ func ServeTLS(address string, certPem string, keyPem string) error {
 }
 
 func okHandler(w http.ResponseWriter, req *http.Request) {
+	logRequest(req, "")
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "OK")
 }
@@ -25,6 +29,7 @@ func exampleRequestHandler(w http.ResponseWriter, req *http.Request) {
 
 func credentialListerHandler(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(200)
+	logRequest(req, "")
 	for _, service := range MailServices {
 		fmt.Fprintf(w, "%s\n\trequires: %s\n\tmore info: %s\n",
 			service.ServiceName, service.RequiredCredentials, service.DocUrl)
@@ -33,14 +38,17 @@ func credentialListerHandler(w http.ResponseWriter, req *http.Request) {
 func mailRequestHandler(w http.ResponseWriter, req *http.Request) {
 	defer func() {
 		if r := recover(); r != nil {
-			// log.Critical("$+v", r)
+			log.Printf("$+v", r)
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Internal Server Error")
 		}
 	}()
-	if mr, err := NewMailRequestJson(req.Body); err != nil {
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(req.Body)
+	s := buf.String()
+	logRequest(req, s)
+	if mr, err := NewMailRequestJson(strings.NewReader(s)); err != nil {
 		w.WriteHeader(400)
-
 		fmt.Fprintf(w, "error parsing mail request: %s", err)
 	} else if resp, errs, succ := SendRetry(mr, MAX_RETRY); !succ {
 		w.WriteHeader(400)
@@ -49,6 +57,27 @@ func mailRequestHandler(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(200)
 		fmt.Fprintf(w, "success: %v", resp)
 	}
+}
+
+func logRequest(req *http.Request, body string) {
+	log.Printf("NEW REQUEST:")
+	log.Printf("Method: %s", req.Method)
+	log.Printf("URL: %s", req.URL)
+	log.Printf("Proto: %s", req.Proto)
+	log.Printf("ProtoMajor: %d", req.ProtoMajor)
+	log.Printf("ProtoMinor: %d", req.ProtoMinor)
+	log.Printf("Header: %#v", req.Header)
+	log.Printf("Body: %s", body)
+	log.Printf("ContentLength: %d", req.ContentLength)
+	log.Printf("TransferEncoding: %s", req.TransferEncoding)
+	log.Printf("Host: %s", req.Host)
+	log.Printf("Form: %s", req.Form)
+	log.Printf("PostForm: %s", req.PostForm)
+	log.Printf("MultipartForm: %s", req.MultipartForm)
+	log.Printf("Trailer: %s", req.Trailer)
+	log.Printf("RemoteAddr: %s", req.RemoteAddr)
+	log.Printf("RequestURI: %s", req.RequestURI)
+	log.Printf("TLS: %#v", req.TLS)
 }
 
 const sampleRequest = `{
