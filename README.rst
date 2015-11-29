@@ -13,7 +13,7 @@ This simple email-sending service provides a wrapper/abstraction over other mail
   - curl https://localhost:6700/credentials -k 
   - curl https://localhost:6700/sampleRequest -k 
 
-- Send an example mail-send request:
+- Obtain credentials for at least one supported service. Send an example mail-send request:
 
 ::
 
