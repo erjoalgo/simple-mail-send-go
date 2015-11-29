@@ -50,12 +50,12 @@ func mailRequestHandler(w http.ResponseWriter, req *http.Request) {
 	if mr, err := NewMailRequestJson(strings.NewReader(s)); err != nil {
 		w.WriteHeader(400)
 		fmt.Fprintf(w, "error parsing mail request: %s", err)
-	} else if resp, errs, succ := SendRetry(mr, MAX_RETRY); !succ {
+	} else if resp, errs, succ, service := SendRetry(mr, MAX_RETRY); !succ {
 		w.WriteHeader(400)
 		fmt.Fprintf(w, "unable to deliver mail after max retries: %s", errs)
 	} else {
 		w.WriteHeader(200)
-		fmt.Fprintf(w, "success: %v", resp)
+		fmt.Fprintf(w, "success with %s: %v", service.ServiceName, resp)
 	}
 }
 
